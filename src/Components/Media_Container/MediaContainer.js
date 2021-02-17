@@ -44,19 +44,6 @@ const MediaContainer = () => {
           <Navbar.Brand href="/">
             <img src={logo} />
           </Navbar.Brand>
-          <Navbar.Collapse id="basic-navbar-nav">
-            <Nav className="ml-auto">
-              <Nav.Item>
-                <Nav.Link href="/">Home</Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link href="/about">About</Nav.Link>
-              </Nav.Item>
-              <Nav.Item>
-                <Nav.Link href="/services">Services</Nav.Link>
-              </Nav.Item>
-            </Nav>
-          </Navbar.Collapse>
         </Navbar>
         <ListView data={Musiclists} />
       </Styles>
