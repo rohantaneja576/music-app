@@ -35,22 +35,15 @@ const ImgBlock = styled.div`
 `;
 const ContentBlock = styled.div`
   padding: 15px 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 const PlayBtn = styled.div`
   position: absolute;
   width: 35%;
 `;
 const PlaySection = styled.div`
-  /* audio {
-    outline: none;
-    width: 95%;
-    bottom: 5%;
-    position: absolute;
-    margin: 0 auto;
-    left: 50%;
-    transform: translateX(-50%);
-  } */
-
   width: 95%;
   height: 54px;
   bottom: 5%;
@@ -63,16 +56,24 @@ const PlaySection = styled.div`
   background: #e1e3e4;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-around;
   box-sizing: border-box;
   padding: 0px 25px;
 `;
 const ControlSection = styled.div`
-  img {
-    width: 15% !important;
+  button img {
+    width: 70% !important;
     cursor: pointer;
   }
-  /* border: 1px solid; */
+  button {
+    width: 20%;
+    background: none;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+  }
   width: 10%;
   height: 70%;
   display: flex;
@@ -81,7 +82,6 @@ const ControlSection = styled.div`
   overflow: hidden;
 `;
 const TimeSection = styled.div`
-  /* border: 1px solid; */
   width: 5%;
   height: 70%;
   display: flex;
@@ -91,71 +91,106 @@ const TimeSection = styled.div`
 
 const Progressbar = styled.div`
   width: 65%;
-  height: 7%;
-  border-radius: 50px;
-  background: #908e8e;
-  padding: 1px 0px;
-  margin-left: 1%;
-`;
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    background-color: #9a9a97;
+    border-radius: 50px;
+    outline: none;
+  }
 
-const Progress = styled.div`
-  width: 15px;
-  height: 15px;
-  background: #000;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 10px;
+    -webkit-appearance: none;
+    border-radius: 50px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    width: 20px;
+    -webkit-appearance: none;
+    height: 20px;
+    cursor: pointer;
+    background: #000;
+    border-radius: 50%;
+    margin-top: -5px;
+  }
+  input[type="range"]::-ms-fill-lower {
+    background: #919e4b;
+    border-radius: 2px;
+  }
+
+  input[type="range"]::-ms-fill-upper {
+    background: #c5c5c5;
+    border-radius: 2px;
+  }
 `;
 
 const ListView = ({ data }) => {
+  const PlayerState = {
+    PLAYING: "PLAYING",
+    PAUSED: "PAUSE",
+  };
+
   const [activeTab, setActiveTab] = useState(null);
-  const [playing, setPlaying] = useState(false);
-  const [ButtonPlay, setButtonPlay] = useState(play);
+  const [playerState, setPlayerState] = useState(PlayerState.PLAYING);
   const audioRef = useRef(null);
+  const valueRef = useRef(null);
+  const [duration, setDuration] = useState(null);
   const [minutes, setMinutes] = useState(0);
-  const [seconds, setseconds] = useState("00");
+  const [seconds, setseconds] = useState(0);
+  const [minutesDuration, setMinutesDuration] = useState(0);
+  const [secondsDuration, setSecondsDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(null);
+  const [sliderValue, setSliderValue] = useState(0);
 
-  //console.log(audioRef);
-
+  console.log(valueRef.current);
   useEffect(() => {
     if (audioRef.current) {
       const canPlay = () => {
         const duration = audioRef.current.duration;
+        setDuration(Math.floor(duration));
         const minutes = Math.floor(duration / 60);
         setMinutes(minutes);
         const seconds = Math.floor(duration - minutes * 60);
         setseconds(seconds);
-        console.log(minutes, seconds);
       };
       audioRef.current.addEventListener("canplay", canPlay);
+      audioRef.current.addEventListener("timeupdate", (event) => {
+        const currentTime = audioRef.current.currentTime;
+        const position = (100 / duration) * Math.floor(currentTime);
+        setSliderValue(position);
+        setCurrentTime(Math.floor(currentTime));
+        const minutesDuration = Math.floor(currentTime / 60);
+        setMinutesDuration(minutesDuration);
+        const secondsDuration = Math.floor(currentTime - minutesDuration * 60);
+        setSecondsDuration(secondsDuration);
+      });
       return () => {
         audioRef.current.removeEventListener("canplay", canPlay);
       };
     }
-  }, [audioRef, minutes, seconds]);
+    if (valueRef.current) {
+      const position = valueRef.current.getBoundingClientRect();
+      console.log(position);
+    }
+  }, [audioRef, minutes, seconds, duration]);
 
-  const handleTab = (index) => {
+  const handleProgressBar = (index) => {
     setActiveTab(index);
-  };
-
-  const handlePlayButton = (activeTab) => {
-    console.log(activeTab);
-    if (playing) {
-      setPlaying(false);
-      setButtonPlay(play);
+    if (playerState === "PLAYING") {
+      setPlayerState(PlayerState.PAUSED);
     } else {
-      setPlaying(true);
-      setButtonPlay(pause);
+      setPlayerState(PlayerState.PLAYING);
     }
   };
+
   return (
     <React.Fragment>
       <StyledWrapper>
         {data.map((item, index) => {
           return (
             <React.Fragment>
-              <WrapperItems onClick={() => handleTab(index)}>
+              <WrapperItems onClick={() => handleProgressBar(index)}>
                 <ImgBlock>
                   <PlayBtn>
                     <img src={playBtn} />
@@ -173,33 +208,69 @@ const ListView = ({ data }) => {
       </StyledWrapper>
       <PlaySection>
         <ControlSection>
-          <img
-            src={prev}
+          <button
             onClick={() => {
-              console.log(activeTab);
               return !data[activeTab].id ? null : setActiveTab(activeTab - 1);
             }}
-          />
-          <img src={ButtonPlay} onClick={() => handlePlayButton(activeTab)} />
-          <img
-            src={next}
+          >
+            <img src={prev} />
+          </button>
+
+          <button
             onClick={() => {
-              console.log(activeTab);
+              playerState === "PLAYING"
+                ? setPlayerState(PlayerState.PAUSED)
+                  ? audioRef.current.pause()
+                  : audioRef.current.play()
+                : setPlayerState(PlayerState.PLAYING)
+                ? audioRef.current.play()
+                : audioRef.current.pause();
+            }}
+          >
+            {playerState === "PLAYING" ? (
+              <img src={play} />
+            ) : (
+              <img src={pause} />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
               return !data[activeTab].id ? null : setActiveTab(activeTab + 1);
             }}
-          />
+          >
+            <img src={next} />
+          </button>
         </ControlSection>
         <TimeSection>
-          <span>0:00</span> /
           <span>
-            {minutes}:{seconds}
+            {`${minutesDuration}`.padStart(2, "0")}:
+            {`${secondsDuration}`.padStart(2, "0")}
+          </span>
+          /
+          <span>
+            {`${minutes}`.padStart(2, "0")}:{`${seconds}`.padStart(2, "0")}
           </span>
         </TimeSection>
         <Progressbar>
-          <Progress></Progress>
+          <input
+            type="range"
+            id="slider"
+            min="0"
+            max="100"
+            value={sliderValue}
+            ref={valueRef}
+            onChange={(e) => setSliderValue(e.target.value)}
+          />
         </Progressbar>
       </PlaySection>
-      <audio ref={audioRef} src={data[activeTab]?.audio} autoPlay controls />
+      <audio
+        ref={audioRef}
+        src={data[activeTab]?.audio}
+        autoPlay
+        controls
+        style={{ display: "none" }}
+      />
     </React.Fragment>
   );
 };

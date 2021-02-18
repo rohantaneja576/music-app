@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "../../App.css";
 
-const Tab_Switch = () => {
+const TabSwitch = () => {
   const [tabs] = useState([
     { id: 1, label: "Discovery" },
     { id: 2, label: "Setting" },
@@ -16,16 +16,7 @@ const Tab_Switch = () => {
 
   const TabView = ({ activeTab }) => {
     const foundValue = tabs.find((val) => val.id === activeTab);
-    //console.log(foundValue);
     return <h1>{foundValue.label}</h1>;
-    // switch (activeTab) {
-    //   case 1:
-    //     return <h1>{tabs[0].label}</h1>;
-    //   case 2:
-    //     return <h1>{tabs[1].label}</h1>;
-    //   default:
-    //     return null;
-    // }
   };
 
   return (
@@ -40,4 +31,4 @@ const Tab_Switch = () => {
   );
 };
 
-export default Tab_Switch;
+export default TabSwitch;
