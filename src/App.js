@@ -1,5 +1,5 @@
 import React from "react";
-import MediaContainer from "./Components/Media_Container/MediaContainer";
+import MediaContainer from "./Components/MediaContainer/MediaContainer";
 
 const App = () => {
   return (

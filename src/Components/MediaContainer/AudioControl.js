@@ -1,48 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
-import playBtn from "../../Images/playBtn.png";
 import styled from "styled-components";
 import play from "../../Images/play.png";
 import pause from "../../Images/pause.png";
 import next from "../../Images/next.png";
 import prev from "../../Images/prev.png";
 
-const StyledWrapper = styled.div`
-  margin: 0 auto;
-  padding: 15px 20px;
-  box-sizing: border-box;
-  margin-top: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  cursor: pointer;
-`;
-const WrapperItems = styled.div`
-  border: 1px solid;
-  margin-right: 20px;
-  margin-bottom: 20px;
-  border-radius: 15px;
-  overflow: hidden;
-  width: 200px;
-`;
-const ImgBlock = styled.div`
-  background: red;
-  margin: 0 auto;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-`;
-const ContentBlock = styled.div`
-  padding: 15px 0px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-const PlayBtn = styled.div`
-  position: absolute;
-  width: 35%;
-`;
 const PlaySection = styled.div`
   width: 95%;
   height: 54px;
@@ -124,26 +86,46 @@ const Progressbar = styled.div`
     border-radius: 2px;
   }
 `;
-
-const ListView = ({ data }) => {
-  const PlayerState = {
-    PLAYING: "PLAYING",
-    PAUSED: "PAUSE",
+const ThrottleFunction = (func) => {
+  let time = new Date().getTime() / 1000;
+  return () => {
+    const currentTimestamp = +new Date() / 1000;
+    if (currentTimestamp - time >= 0) {
+      func();
+      time = currentTimestamp;
+    }
   };
-
-  const [activeTab, setActiveTab] = useState(null);
-  const [playerState, setPlayerState] = useState(PlayerState.PLAYING);
+};
+const AudioControl = ({}) => {
   const audioRef = useRef(null);
-  const valueRef = useRef(null);
   const [duration, setDuration] = useState(null);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setseconds] = useState(0);
   const [minutesDuration, setMinutesDuration] = useState(0);
   const [secondsDuration, setSecondsDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(null);
+  const [currentTime, setCurrentTime] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
 
-  console.log(valueRef.current);
+  useEffect(() => {
+    if (audioRef.current && audioRef.current.src) {
+      const timeUpdate = () => {
+        const currentTime = audioRef.current.currentTime;
+        const position = (100 / duration) * Math.floor(currentTime);
+        setSliderValue(position);
+        setCurrentTime(Math.floor(currentTime));
+        const minutesDuration = Math.floor(currentTime / 60);
+        setMinutesDuration(minutesDuration);
+        const secondsDuration = Math.floor(currentTime - minutesDuration * 60);
+        setSecondsDuration(secondsDuration);
+      };
+      const DebouncingFunction = ThrottleFunction(timeUpdate, 1000);
+      audioRef.current.addEventListener("timeupdate", DebouncingFunction);
+      return () => {
+        audioRef.current.removeEventListener("timeupdate", DebouncingFunction);
+      };
+    }
+  }, [audioRef, audioRef.current?.src]);
+
   useEffect(() => {
     if (audioRef.current) {
       const canPlay = () => {
@@ -155,57 +137,19 @@ const ListView = ({ data }) => {
         setseconds(seconds);
       };
       audioRef.current.addEventListener("canplay", canPlay);
-      audioRef.current.addEventListener("timeupdate", (event) => {
-        const currentTime = audioRef.current.currentTime;
-        const position = (100 / duration) * Math.floor(currentTime);
-        setSliderValue(position);
-        setCurrentTime(Math.floor(currentTime));
-        const minutesDuration = Math.floor(currentTime / 60);
-        setMinutesDuration(minutesDuration);
-        const secondsDuration = Math.floor(currentTime - minutesDuration * 60);
-        setSecondsDuration(secondsDuration);
-      });
+
       return () => {
         audioRef.current.removeEventListener("canplay", canPlay);
       };
     }
-    if (valueRef.current) {
-      const position = valueRef.current.getBoundingClientRect();
-      console.log(position);
-    }
   }, [audioRef, minutes, seconds, duration]);
-
-  const handleProgressBar = (index) => {
-    setActiveTab(index);
-    if (playerState === "PLAYING") {
-      setPlayerState(PlayerState.PAUSED);
-    } else {
-      setPlayerState(PlayerState.PLAYING);
-    }
+  const getPosition = (SlideValue) => {
+    const getCurrenTime = (SlideValue * duration) / 100;
+    if (audioRef.current) audioRef.current.currentTime = getCurrenTime;
   };
 
   return (
     <React.Fragment>
-      <StyledWrapper>
-        {data.map((item, index) => {
-          return (
-            <React.Fragment>
-              <WrapperItems onClick={() => handleProgressBar(index)}>
-                <ImgBlock>
-                  <PlayBtn>
-                    <img src={playBtn} />
-                  </PlayBtn>
-                  <img src={item.imgURL} />
-                </ImgBlock>
-                <ContentBlock>
-                  <b>Title : </b>
-                  <div>{item.title}</div>
-                </ContentBlock>
-              </WrapperItems>
-            </React.Fragment>
-          );
-        })}
-      </StyledWrapper>
       <PlaySection>
         <ControlSection>
           <button
@@ -215,7 +159,6 @@ const ListView = ({ data }) => {
           >
             <img src={prev} />
           </button>
-
           <button
             onClick={() => {
               playerState === "PLAYING"
@@ -233,7 +176,6 @@ const ListView = ({ data }) => {
               <img src={pause} />
             )}
           </button>
-
           <button
             onClick={() => {
               return !data[activeTab].id ? null : setActiveTab(activeTab + 1);
@@ -249,7 +191,7 @@ const ListView = ({ data }) => {
           </span>
           /
           <span>
-            {`${minutes}`.padStart(2, "0")}:{`${seconds}`.padStart(2, "0")}
+            {minutes}:{seconds}
           </span>
         </TimeSection>
         <Progressbar>
@@ -261,18 +203,12 @@ const ListView = ({ data }) => {
             value={sliderValue}
             ref={valueRef}
             onChange={(e) => setSliderValue(e.target.value)}
+            onClick={(e) => getPosition(e.target.value)}
           />
         </Progressbar>
       </PlaySection>
-      <audio
-        ref={audioRef}
-        src={data[activeTab]?.audio}
-        autoPlay
-        controls
-        style={{ display: "none" }}
-      />
     </React.Fragment>
   );
 };
 
-export default ListView;
+export default AudioControl;
