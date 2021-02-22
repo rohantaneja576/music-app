@@ -96,15 +96,30 @@ const ThrottleFunction = (func) => {
     }
   };
 };
-const AudioControl = ({}) => {
+export const PlayerState = {
+  PLAYING: "PLAYING",
+  PAUSED: "PAUSE",
+};
+
+const AudioControl = ({
+  playerState,
+  updatePlayerState,
+  audiosrc,
+  prevSong,
+  nextSong,
+}) => {
   const audioRef = useRef(null);
   const [duration, setDuration] = useState(null);
-  const [minutes, setMinutes] = useState(0);
-  const [seconds, setseconds] = useState(0);
-  const [minutesDuration, setMinutesDuration] = useState(0);
-  const [secondsDuration, setSecondsDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
+
+  const getFormattedTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time - minutes * 60);
+    return `${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     if (audioRef.current && audioRef.current.src) {
@@ -113,10 +128,6 @@ const AudioControl = ({}) => {
         const position = (100 / duration) * Math.floor(currentTime);
         setSliderValue(position);
         setCurrentTime(Math.floor(currentTime));
-        const minutesDuration = Math.floor(currentTime / 60);
-        setMinutesDuration(minutesDuration);
-        const secondsDuration = Math.floor(currentTime - minutesDuration * 60);
-        setSecondsDuration(secondsDuration);
       };
       const DebouncingFunction = ThrottleFunction(timeUpdate, 1000);
       audioRef.current.addEventListener("timeupdate", DebouncingFunction);
@@ -131,10 +142,6 @@ const AudioControl = ({}) => {
       const canPlay = () => {
         const duration = audioRef.current.duration;
         setDuration(Math.floor(duration));
-        const minutes = Math.floor(duration / 60);
-        setMinutes(minutes);
-        const seconds = Math.floor(duration - minutes * 60);
-        setseconds(seconds);
       };
       audioRef.current.addEventListener("canplay", canPlay);
 
@@ -142,7 +149,8 @@ const AudioControl = ({}) => {
         audioRef.current.removeEventListener("canplay", canPlay);
       };
     }
-  }, [audioRef, minutes, seconds, duration]);
+  }, [audioRef, duration]);
+
   const getPosition = (SlideValue) => {
     const getCurrenTime = (SlideValue * duration) / 100;
     if (audioRef.current) audioRef.current.currentTime = getCurrenTime;
@@ -152,47 +160,29 @@ const AudioControl = ({}) => {
     <React.Fragment>
       <PlaySection>
         <ControlSection>
-          <button
-            onClick={() => {
-              return !data[activeTab].id ? null : setActiveTab(activeTab - 1);
-            }}
-          >
+          <button onClick={prevSong}>
             <img src={prev} />
           </button>
           <button
             onClick={() => {
-              playerState === "PLAYING"
-                ? setPlayerState(PlayerState.PAUSED)
-                  ? audioRef.current.pause()
-                  : audioRef.current.play()
-                : setPlayerState(PlayerState.PLAYING)
-                ? audioRef.current.play()
-                : audioRef.current.pause();
+              if (playerState === PlayerState.PLAYING) {
+                updatePlayerState(PlayerState.PAUSED);
+                audioRef.current.pause();
+              } else {
+                updatePlayerState(PlayerState.PLAYING);
+                audioRef.current.play();
+              }
             }}
           >
-            {playerState === "PLAYING" ? (
-              <img src={play} />
-            ) : (
-              <img src={pause} />
-            )}
+            {<img src={playerState === PlayerState.PAUSED ? play : pause} />}
           </button>
-          <button
-            onClick={() => {
-              return !data[activeTab].id ? null : setActiveTab(activeTab + 1);
-            }}
-          >
+          <button onClick={nextSong}>
             <img src={next} />
           </button>
         </ControlSection>
         <TimeSection>
-          <span>
-            {`${minutesDuration}`.padStart(2, "0")}:
-            {`${secondsDuration}`.padStart(2, "0")}
-          </span>
-          /
-          <span>
-            {minutes}:{seconds}
-          </span>
+          <span>{getFormattedTime(currentTime)}</span>/
+          <span>{getFormattedTime(duration)}</span>
         </TimeSection>
         <Progressbar>
           <input
@@ -201,12 +191,19 @@ const AudioControl = ({}) => {
             min="0"
             max="100"
             value={sliderValue}
-            ref={valueRef}
             onChange={(e) => setSliderValue(e.target.value)}
             onClick={(e) => getPosition(e.target.value)}
           />
         </Progressbar>
       </PlaySection>
+
+      <audio
+        ref={audioRef}
+        src={audiosrc}
+        autoPlay
+        controls
+        style={{ display: "none" }}
+      />
     </React.Fragment>
   );
 };

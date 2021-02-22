@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import playBtn from "../../Images/playBtn.png";
 import styled from "styled-components";
+import AudioControl, { PlayerState } from "./AudioControl";
 
 const StyledWrapper = styled.div`
   margin: 0 auto;
@@ -41,30 +42,35 @@ const PlayBtn = styled.div`
 `;
 
 const MusicList = ({ data }) => {
-  const PlayerState = {
-    PLAYING: "PLAYING",
-    PAUSED: "PAUSE",
-  };
   const [activeTab, setActiveTab] = useState(null);
   const [Playing, setPlaying] = useState(false);
-  const [playerState, setPlayerState] = useState(PlayerState.PLAYING);
+  const [playerState, setPlayerState] = useState(PlayerState.PAUSED);
 
-  const handleProgressBar = (index) => {
+  const handleAudio = (index) => {
     setPlaying(true);
     setActiveTab(index);
-    if (playerState === "PLAYING") {
-      setPlayerState(PlayerState.PAUSED);
+    if (playerState === PlayerState.PAUSED) {
+      setPlayerState(PlayerState.PLAYING);
     } else {
-      setPlayerState(PlayerState.PAUSED);
+      setPlayerState(PlayerState.PLAYING);
     }
   };
+
+  const handlePrevSong = () => {
+    return !data[activeTab].id ? null : setActiveTab(activeTab - 1);
+  };
+
+  const handleNextSong = () => {
+    return !data[activeTab].id ? null : setActiveTab(activeTab + 1);
+  };
+
   return (
     <React.Fragment>
       <StyledWrapper>
         {data.map((item, index) => {
           return (
             <React.Fragment key={item.id}>
-              <WrapperItems onClick={() => handleProgressBar(index)}>
+              <WrapperItems onClick={() => handleAudio(index)}>
                 <ImgBlock>
                   <PlayBtn>
                     <img src={playBtn} />
@@ -80,6 +86,16 @@ const MusicList = ({ data }) => {
           );
         })}
       </StyledWrapper>
+      {Playing && (
+        <AudioControl
+          data={data}
+          playerState={playerState}
+          updatePlayerState={setPlayerState}
+          audiosrc={data[activeTab]?.audio}
+          prevSong={handlePrevSong}
+          nextSong={handleNextSong}
+        />
+      )}
     </React.Fragment>
   );
 };

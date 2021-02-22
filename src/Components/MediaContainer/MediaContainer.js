@@ -3,7 +3,7 @@ import { Navbar } from "react-bootstrap";
 import styled from "styled-components";
 import logo from "../../Images/logo.png";
 import { Musiclists } from "../Services/MusicListData";
-import ListView from "./ListView";
+import MusicList from "./MusicList";
 
 const MediaContainer = () => {
   const Styles = styled.div`
@@ -45,7 +45,7 @@ const MediaContainer = () => {
             <img src={logo} />
           </Navbar.Brand>
         </Navbar>
-        <ListView data={Musiclists} />
+        <MusicList data={Musiclists} />
       </Styles>
     </div>
   );
