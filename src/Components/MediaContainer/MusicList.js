@@ -2,6 +2,9 @@ import React, { useState, useRef } from "react";
 import playBtn from "../../Images/playBtn.png";
 import styled from "styled-components";
 import AudioControl, { PlayerState } from "./AudioControl";
+import { useSelector, useDispatch } from "react-redux";
+import { visibleAudioController } from "../../Store/actions/visibilityActions";
+import { prevSong } from "../../Store/actions/audioActions";
 
 const StyledWrapper = styled.div`
   margin: 0 auto;
@@ -43,11 +46,13 @@ const PlayBtn = styled.div`
 
 const MusicList = ({ data }) => {
   const [activeTab, setActiveTab] = useState(null);
-  const [Playing, setPlaying] = useState(false);
   const [playerState, setPlayerState] = useState(PlayerState.PAUSED);
+  const isPlaying = useSelector((state) => state.visibilityReducer.isVisible);
+  const prevValue = useSelector((state) => state.audioControllerReducer.prevID);
+  const dispatch = useDispatch();
 
   const handleAudio = (index) => {
-    setPlaying(true);
+    dispatch(visibleAudioController());
     setActiveTab(index);
     if (playerState === PlayerState.PAUSED) {
       setPlayerState(PlayerState.PLAYING);
@@ -57,7 +62,9 @@ const MusicList = ({ data }) => {
   };
 
   const handlePrevSong = () => {
-    return !data[activeTab].id ? null : setActiveTab(activeTab - 1);
+    console.log(prevValue);
+    let value = activeTab - 1;
+    return !data[activeTab].id ? null : setActiveTab(dispatch(prevSong(value)));
   };
 
   const handleNextSong = () => {
@@ -86,7 +93,7 @@ const MusicList = ({ data }) => {
           );
         })}
       </StyledWrapper>
-      {Playing && (
+      {isPlaying && (
         <AudioControl
           data={data}
           playerState={playerState}

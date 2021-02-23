@@ -1,11 +1,13 @@
 import React from "react";
 import MediaContainer from "./Components/MediaContainer/MediaContainer";
+import store from "./Store/store";
+import { Provider } from "react-redux";
 
 const App = () => {
   return (
-    <div className="App">
+    <Provider store={store}>
       <MediaContainer />
-    </div>
+    </Provider>
   );
 };
 

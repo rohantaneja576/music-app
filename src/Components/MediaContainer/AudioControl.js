@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import styled from "styled-components";
 import play from "../../Images/play.png";
 import pause from "../../Images/pause.png";
 import next from "../../Images/next.png";
 import prev from "../../Images/prev.png";
+import { totalTime, activeTime } from "../../Store/actions/audioActions";
 
 const PlaySection = styled.div`
   width: 95%;
@@ -109,8 +111,11 @@ const AudioControl = ({
   nextSong,
 }) => {
   const audioRef = useRef(null);
-  const [duration, setDuration] = useState(null);
-  const [currentTime, setCurrentTime] = useState(0);
+  const duration = useSelector(
+    (state) => state.audioControllerReducer.duration
+  );
+  const current = useSelector((state) => state.audioControllerReducer.current);
+  const dispatch = useDispatch();
   const [sliderValue, setSliderValue] = useState(0);
 
   const getFormattedTime = (time) => {
@@ -127,7 +132,7 @@ const AudioControl = ({
         const currentTime = audioRef.current.currentTime;
         const position = (100 / duration) * Math.floor(currentTime);
         setSliderValue(position);
-        setCurrentTime(Math.floor(currentTime));
+        dispatch(activeTime(Math.floor(currentTime)));
       };
       const DebouncingFunction = ThrottleFunction(timeUpdate, 1000);
       audioRef.current.addEventListener("timeupdate", DebouncingFunction);
@@ -141,7 +146,7 @@ const AudioControl = ({
     if (audioRef.current) {
       const canPlay = () => {
         const duration = audioRef.current.duration;
-        setDuration(Math.floor(duration));
+        dispatch(totalTime(Math.floor(duration)));
       };
       audioRef.current.addEventListener("canplay", canPlay);
 
@@ -181,7 +186,7 @@ const AudioControl = ({
           </button>
         </ControlSection>
         <TimeSection>
-          <span>{getFormattedTime(currentTime)}</span>/
+          <span>{getFormattedTime(current)}</span>/
           <span>{getFormattedTime(duration)}</span>
         </TimeSection>
         <Progressbar>
