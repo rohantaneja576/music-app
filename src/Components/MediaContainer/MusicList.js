@@ -1,10 +1,16 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import playBtn from "../../Images/playBtn.png";
 import styled from "styled-components";
-import AudioControl, { PlayerState } from "./AudioControl";
+import AudioControl from "./AudioControl";
 import { useSelector, useDispatch } from "react-redux";
 import { visibleAudioController } from "../../Store/actions/visibilityActions";
-import { prevSong } from "../../Store/actions/audioActions";
+import {
+  currentSong,
+  playerState,
+  activeTime,
+  sliderValue,
+} from "../../Store/actions/audioActions";
+import { PlayerState } from "../../Store/reducers/audioControllerReducer";
 
 const StyledWrapper = styled.div`
   margin: 0 auto;
@@ -45,39 +51,51 @@ const PlayBtn = styled.div`
 `;
 
 const MusicList = ({ data }) => {
-  const [activeTab, setActiveTab] = useState(null);
-  const [playerState, setPlayerState] = useState(PlayerState.PAUSED);
   const isPlaying = useSelector((state) => state.visibilityReducer.isVisible);
-  const prevValue = useSelector((state) => state.audioControllerReducer.prevID);
+  const playingMode = useSelector(
+    (state) => state.audioControllerReducer.playingMode
+  );
+  let currentSongID = useSelector(
+    (state) => state.audioControllerReducer.currentSongID
+  );
   const dispatch = useDispatch();
 
-  const handleAudio = (index) => {
+  const currentAudio = data.find((value) => value.id === currentSongID)?.audio;
+  console.log(currentSongID, data.length, playingMode);
+
+  const handleAudio = (id) => {
     dispatch(visibleAudioController());
-    setActiveTab(index);
-    if (playerState === PlayerState.PAUSED) {
-      setPlayerState(PlayerState.PLAYING);
-    } else {
-      setPlayerState(PlayerState.PLAYING);
+    dispatch(currentSong(id));
+    dispatch(activeTime(0));
+    dispatch(sliderValue(0));
+    if (playingMode === "PAUSED") {
+      dispatch(playerState(PlayerState.PLAYING));
     }
   };
 
   const handlePrevSong = () => {
-    console.log(prevValue);
-    let value = activeTab - 1;
-    return !data[activeTab].id ? null : setActiveTab(dispatch(prevSong(value)));
+    if (currentSongID === 1) {
+      currentSongID = data.length + 1;
+    }
+    dispatch(currentSong(currentSongID - 1));
+    return currentAudio;
   };
 
   const handleNextSong = () => {
-    return !data[activeTab].id ? null : setActiveTab(activeTab + 1);
+    if (currentSongID > data.length - 1) {
+      currentSongID = 0;
+    }
+    dispatch(currentSong(currentSongID + 1));
+    return currentAudio;
   };
 
   return (
     <React.Fragment>
       <StyledWrapper>
-        {data.map((item, index) => {
+        {data.map((item) => {
           return (
             <React.Fragment key={item.id}>
-              <WrapperItems onClick={() => handleAudio(index)}>
+              <WrapperItems onClick={() => handleAudio(item.id)}>
                 <ImgBlock>
                   <PlayBtn>
                     <img src={playBtn} />
@@ -95,10 +113,7 @@ const MusicList = ({ data }) => {
       </StyledWrapper>
       {isPlaying && (
         <AudioControl
-          data={data}
-          playerState={playerState}
-          updatePlayerState={setPlayerState}
-          audiosrc={data[activeTab]?.audio}
+          audiosrc={currentAudio}
           prevSong={handlePrevSong}
           nextSong={handleNextSong}
         />

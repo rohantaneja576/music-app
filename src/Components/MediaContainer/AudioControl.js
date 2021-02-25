@@ -1,11 +1,17 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import styled from "styled-components";
 import play from "../../Images/play.png";
 import pause from "../../Images/pause.png";
 import next from "../../Images/next.png";
 import prev from "../../Images/prev.png";
-import { totalTime, activeTime } from "../../Store/actions/audioActions";
+import {
+  totalTime,
+  activeTime,
+  playerState,
+  sliderValue,
+} from "../../Store/actions/audioActions";
+import { PlayerState } from "../../Store/reducers/audioControllerReducer";
 
 const PlaySection = styled.div`
   width: 95%;
@@ -92,31 +98,26 @@ const ThrottleFunction = (func) => {
   let time = new Date().getTime() / 1000;
   return () => {
     const currentTimestamp = +new Date() / 1000;
-    if (currentTimestamp - time >= 0) {
+    if (currentTimestamp - time >= 1) {
       func();
       time = currentTimestamp;
     }
   };
 };
-export const PlayerState = {
-  PLAYING: "PLAYING",
-  PAUSED: "PAUSE",
-};
 
-const AudioControl = ({
-  playerState,
-  updatePlayerState,
-  audiosrc,
-  prevSong,
-  nextSong,
-}) => {
+const AudioControl = ({ audiosrc, prevSong, nextSong }) => {
   const audioRef = useRef(null);
   const duration = useSelector(
     (state) => state.audioControllerReducer.duration
   );
   const current = useSelector((state) => state.audioControllerReducer.current);
+  const playingMode = useSelector(
+    (state) => state.audioControllerReducer.playingMode
+  );
+  const slider_value = useSelector(
+    (state) => state.audioControllerReducer.sliderValue
+  );
   const dispatch = useDispatch();
-  const [sliderValue, setSliderValue] = useState(0);
 
   const getFormattedTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -131,7 +132,7 @@ const AudioControl = ({
       const timeUpdate = () => {
         const currentTime = audioRef.current.currentTime;
         const position = (100 / duration) * Math.floor(currentTime);
-        setSliderValue(position);
+        dispatch(sliderValue(Math.floor(position)));
         dispatch(activeTime(Math.floor(currentTime)));
       };
       const DebouncingFunction = ThrottleFunction(timeUpdate, 1000);
@@ -155,11 +156,21 @@ const AudioControl = ({
       };
     }
   }, [audioRef, duration]);
-
+  var getCurrentTime;
   const getPosition = (SlideValue) => {
-    const getCurrenTime = (SlideValue * duration) / 100;
-    if (audioRef.current) audioRef.current.currentTime = getCurrenTime;
+    getCurrentTime = (SlideValue * duration) / 100;
+    if (audioRef.current)
+      audioRef.current.currentTime = Math.floor(getCurrentTime);
   };
+
+  if (playingMode === "PAUSED") {
+    audioRef.current.pause();
+  }
+  if (audioRef.current) {
+    if (current === duration) {
+      dispatch(playerState(PlayerState.PAUSED));
+    }
+  }
 
   return (
     <React.Fragment>
@@ -170,16 +181,16 @@ const AudioControl = ({
           </button>
           <button
             onClick={() => {
-              if (playerState === PlayerState.PLAYING) {
-                updatePlayerState(PlayerState.PAUSED);
+              if (playingMode === "PLAYING") {
+                dispatch(playerState(PlayerState.PAUSED));
                 audioRef.current.pause();
               } else {
-                updatePlayerState(PlayerState.PLAYING);
+                dispatch(playerState(PlayerState.PLAYING));
                 audioRef.current.play();
               }
             }}
           >
-            {<img src={playerState === PlayerState.PAUSED ? play : pause} />}
+            {<img src={playingMode === PlayerState.PAUSED ? play : pause} />}
           </button>
           <button onClick={nextSong}>
             <img src={next} />
@@ -195,8 +206,8 @@ const AudioControl = ({
             id="slider"
             min="0"
             max="100"
-            value={sliderValue}
-            onChange={(e) => setSliderValue(e.target.value)}
+            value={slider_value}
+            onChange={(e) => dispatch(sliderValue(e.target.value))}
             onClick={(e) => getPosition(e.target.value)}
           />
         </Progressbar>

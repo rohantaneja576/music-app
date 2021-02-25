@@ -1,6 +1,5 @@
 import React from "react";
 import { Navbar } from "react-bootstrap";
-import { useSelector } from "react-redux";
 import styled from "styled-components";
 import logo from "../../Images/logo.png";
 import { Musiclists } from "../Services/MusicListData";

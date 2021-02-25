@@ -14,9 +14,23 @@ export const activeTime = (current) => ({
   },
 });
 
-export const prevSong = (prevID) => ({
-  type: actions.PREV_SONG,
+export const currentSong = (currentID) => ({
+  type: actions.CURRENT_SONG,
   payload: {
-    prevID,
+    currentID,
+  },
+});
+
+export const playerState = (playingState) => ({
+  type: actions.PLAYER_STATE,
+  payload: {
+    playingState,
+  },
+});
+
+export const sliderValue = (sliderTime) => ({
+  type: actions.SLIDER_VALUE,
+  payload: {
+    sliderTime,
   },
 });
